@@ -33,33 +33,30 @@ void drawGameBoard()
 
 bool checkIfEnd()
 {
-    for (int i{}; i < 6; i++)
+    for (int i{}; i < 3; i++)
     {
-        if (i < 3)
+        int sumHor{};
+        int sumVert{};
+
+        for (int j{}; j < 3; j++)
         {
-            if (gameBoard[i][0] == gameBoard[i][1] && gameBoard[i][2] == gameBoard[i][1] && gameBoard[i][0] != 0 && gameBoard[i][1] != 0 && gameBoard[i][2] != 0)
-            {
-                return true;
-            }
+            sumVert += gameBoard[i][j];
+            sumHor += gameBoard[j][i];
         }
-        else if (i < 6)
+
+        if (abs(sumVert) == 3 || abs(sumHor) == 3)
         {
-            if (gameBoard[0][i] == gameBoard[1][i] && gameBoard[2][i] == gameBoard[1][i] && gameBoard[0][i] != 0 && gameBoard[1][i] != 0 && gameBoard[2][i] != 0)
-            {
-                return true;
-            }
+            return true;
         }
     }
 
-    if (gameBoard[1][1] == gameBoard[0][0] && gameBoard[2][2] == gameBoard[1][1] && gameBoard[1][1] != 0 && gameBoard[2][2] != 0 && gameBoard[0][0] != 0)
-    {
-        return true;
-    }
+    int sumDiagRight{};
+    int sumDiagLeft{};
+    sumDiagRight = gameBoard[0][0] + gameBoard[1][1] + gameBoard[2][2];
+    sumDiagLeft = gameBoard[2][0] + gameBoard[1][1] + gameBoard[0][2];
     
-    if (gameBoard[1][1] == gameBoard[0][2] && gameBoard[2][0] == gameBoard[1][1] && gameBoard[1][1] != 0 && gameBoard[0][2] != 0 && gameBoard[2][0] != 0)
-    {
+    if (abs(sumDiagLeft) == 3 || abs(sumDiagRight) == 3)
         return true;
-    }
 
     return false;
 }
@@ -91,7 +88,7 @@ int main(int argc, char** argv)
 
             if (gameBoard[spot / 3][spot % 3] == 0 && spot >= 0 && spot <= 8)
             {
-                gameBoard[spot / 3][spot % 3] = (playerOneTurn) ? 1 : 2;
+                gameBoard[spot / 3][spot % 3] = (playerOneTurn) ? 1 : -1;
                 run = false;
             }
             else if (spot < 0 || spot > 8)
