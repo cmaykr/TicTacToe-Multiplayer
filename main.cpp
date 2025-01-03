@@ -11,7 +11,7 @@ void drawGameBoard()
         {
             if (gameBoard[i][j] == 0)
             {
-                std::cout << (i+1)*(j+1);
+                std::cout << (i)*3+(j+1);
             }
             else
             {
@@ -33,13 +33,35 @@ void drawGameBoard()
 
 bool checkIfEnd()
 {
-    for (int i{}; i < 3; i++)
+    for (int i{}; i < 6; i++)
     {
-        for (int j{}; j < 3; j++)
+        if (i < 3)
         {
-            
+            if (gameBoard[i][0] == gameBoard[i][1] && gameBoard[i][2] == gameBoard[i][1] && gameBoard[i][0] != 0 && gameBoard[i][1] != 0 && gameBoard[i][2] != 0)
+            {
+                return true;
+            }
+        }
+        else if (i < 6)
+        {
+            if (gameBoard[0][i] == gameBoard[1][i] && gameBoard[2][i] == gameBoard[1][i] && gameBoard[0][i] != 0 && gameBoard[1][i] != 0 && gameBoard[2][i] != 0)
+            {
+                return true;
+            }
         }
     }
+
+    if (gameBoard[1][1] == gameBoard[0][0] && gameBoard[2][2] == gameBoard[1][1] && gameBoard[1][1] != 0 && gameBoard[2][2] != 0 && gameBoard[0][0] != 0)
+    {
+        return true;
+    }
+    
+    if (gameBoard[1][1] == gameBoard[0][2] && gameBoard[2][0] == gameBoard[1][1] && gameBoard[1][1] != 0 && gameBoard[0][2] != 0 && gameBoard[2][0] != 0)
+    {
+        return true;
+    }
+
+    return false;
 }
 
 int main(int argc, char** argv)
@@ -47,8 +69,9 @@ int main(int argc, char** argv)
     bool gameOver = false;
     bool playerOneTurn = true;
 
-    while (!gameOver)
+    while (gameOver == false)
     {
+        std::cout << gameOver << std::endl;
         drawGameBoard();
         if (playerOneTurn)
         {
@@ -59,24 +82,35 @@ int main(int argc, char** argv)
             std::cout << "Player two's turn, choose an empty spot to place your o. 1-9" << std::endl;
         }
 
-        int spot{};
-        std::cin >> spot;
-        spot--;
-
-        if (spot <= 3)
+        bool run = true;
+        while (run)
         {
-            gameBoard[0][spot] = (playerOneTurn) ? 1 : 2;
-        }
-        else if (spot <= 5)
-        {
-            gameBoard[1][spot % 3] = (playerOneTurn) ? 1 : 2;
-        }
-        else
-        {
-            gameBoard[2][spot % 3] = (playerOneTurn) ? 1 : 2;
+            int spot{};
+            std::cin >> spot;
+            spot--;
+
+            if (gameBoard[spot / 3][spot % 3] == 0 && spot >= 0 && spot <= 8)
+            {
+                gameBoard[spot / 3][spot % 3] = (playerOneTurn) ? 1 : 2;
+                run = false;
+            }
+            else if (spot < 0 || spot > 8)
+            {
+                std::cout << "Incorrect value, choose a spot within 1-9" << std::endl;
+            }  
+            else
+            {
+                std::cout << "Spot already taken, choose another: ";
+            }
         }
 
-
+        if (checkIfEnd())
+        {
+            std::cout << "Player " << ((playerOneTurn) ? "one" : "two") << " won." << std::endl;
+            std::cout << "Final board:" << std::endl;
+            drawGameBoard();
+            gameOver = true;
+        }
         playerOneTurn = !playerOneTurn;
     }
     
