@@ -1,6 +1,10 @@
 #include <iostream>
 #include <array>
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <cerrno>
+
 std::array<std::array<int, 3>, 3> gameBoard{};
 
 void drawGameBoard()
@@ -63,8 +67,38 @@ bool checkIfEnd()
 
 int main(int argc, char** argv)
 {
-    bool gameOver = false;
+    bool gameOver = true;
     bool playerOneTurn = true;
+
+    // Create a socket using IPV4 and TCP
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sock == -1)
+    {
+        std::cerr << "Server socket creation failed." << std::endl;
+        std::cerr << errno << std::endl;
+        return -1;
+    }
+
+    sockaddr_in serverAddress;
+    serverAddress.sin_family = AF_INET;
+    serverAddress.sin_port = htons(8000);
+    serverAddress.sin_addr.s_addr = INADDR_ANY;
+
+    bind(sock, (sockaddr*)&serverAddress, sizeof(serverAddress));
+
+    if (listen(sock, 2) == 0)
+    {
+        std::cout << "Listening" << std::endl;
+    }
+
+    int client = accept(sock, nullptr, nullptr);
+
+    char buffer[1024] = {};
+    recv(client, buffer, sizeof(buffer), 0);
+    std::cout << "Message: " << buffer << std::endl;
+
+    shutdown(sock, SHUT_RDWR);
 
     while (gameOver == false)
     {
