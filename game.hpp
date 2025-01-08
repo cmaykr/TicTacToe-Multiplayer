@@ -23,6 +23,10 @@ public:
     /// @return True if the game is over, false otherwise.
     bool isOver() const;
 
+    /// @brief Gets the winner of the game, will only work if the game is over. Will return -1 on error.
+    /// @return 0 if it's a draw, 1 if player one won and 2 if player two won.
+    int getWinner() const;
+
     /// @brief Gets the board in a string format.
     /// @return The board.
     std::string getBoard() const;
@@ -33,5 +37,6 @@ private:
     std::array<std::array<int, 3>, 3> gameBoard{};
 
     bool gameOver{false};
+    bool isDraw{false};
     bool isPlayerOne{true};
 };

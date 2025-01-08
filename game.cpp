@@ -121,6 +121,7 @@ void Game::drawGameBoardToOstream(std::ostream & out) const
 
 bool Game::checkIfEnd()
 {
+    int emptySpots{};
     for (int i{}; i < 3; i++)
     {
         int sumHor{};
@@ -130,6 +131,9 @@ bool Game::checkIfEnd()
         {
             sumVert += gameBoard[i][j];
             sumHor += gameBoard[j][i];
+
+            if (gameBoard[i][j] == 0)
+                emptySpots++;
         }
 
         if (abs(sumVert) == 3 || abs(sumHor) == 3)
@@ -150,5 +154,25 @@ bool Game::checkIfEnd()
         return true;
     }
 
+    if (emptySpots == 0)
+    {
+        isDraw = true;
+        gameOver = true;
+        return true;
+    }
     return false;
+}
+
+int Game::getWinner() const
+{
+    if (!isOver())
+        return -1;
+
+    if (isDraw)
+        return 0;
+
+    if (isPlayerOnesTurn())
+        return 1;
+
+    return 2;
 }

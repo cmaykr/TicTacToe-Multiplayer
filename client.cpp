@@ -1,8 +1,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/types.h>
 #include <netdb.h>
 #include <charconv>
 #include <unistd.h>
@@ -96,7 +94,7 @@ int main(int argc, char *argv[])
         {
             std::cout << "Connection failed" << std::endl;
         }
-        std::string rec {buf, N};
+        std::string rec {buf, (long unsigned int)N};
 
         std::cout << "Recieved: " << N << " bytes" << std::endl;
         std::for_each(rec.begin(), rec.end() - 1, [](char c)
@@ -117,11 +115,11 @@ int main(int argc, char *argv[])
             char buf[1024];
             int N = recv(clientFD, buf, sizeof(buf), 0);
 
-            std::string ans{buf, N};
+            std::string ans{buf, (long unsigned int)N};
             while (ans == "invalid" && ans != "valid")
             {
                 std::cin >> spot;
-                send(clientFD, (const void*)spot, 1, 0);
+                send(clientFD, &spot, 1, 0);
 
                 N = recv(clientFD, buf, sizeof(buf), 0);
                 ans = std::string(buf, N);
@@ -141,12 +139,18 @@ int main(int argc, char *argv[])
         {
             std::cout << "Other players turn" << std::endl;
         }
+        else if (rec.at(N - 1) == '5')
+        {
+            std::cout << "Game is a draw, tough luck!" << std::endl;
+            gameOver = true;
+        }
         else
         {
             std::cout << "Invalid message, ending session." << std::endl;
             gameOver = true;
         }
     }
+
     close(clientFD);
     return 0;
 }

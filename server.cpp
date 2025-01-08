@@ -1,8 +1,5 @@
 #include <string.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <sys/types.h>
 #include <netdb.h>
 #include <charconv>
 #include <unistd.h>
@@ -49,7 +46,6 @@ void createServer(int port)
     }
 
     freeaddrinfo(result);
-    std::cout << serverFD << std::endl;
     listen(serverFD, 5);
 }
 
@@ -86,7 +82,7 @@ int main(int argc, char** argv)
         {
             board.insert(board.end(), '2');
             send(clientFD, board.c_str(), board.size(), 0);
-            std::cout << "Player two's turn, choose an empty spot to place your o. 1-9" << std::endl;
+            std::cout << "Player two's turn, wait for them to place their mark. " << std::endl;
         }
 
         int spot{};
@@ -108,7 +104,6 @@ int main(int argc, char** argv)
             if (poll(fds, 1, -1) > 0)
                 N = recv(clientFD, buf, sizeof(buf), 0);
 
-            std::cout << "Got message: " << buf << std::endl;
             spot = buf[0];
             while (!game.playMove(spot))
             {
@@ -121,14 +116,27 @@ int main(int argc, char** argv)
 
         if (game.isOver())
         {
-            std::cout << "Player " << ((game.isPlayerOnesTurn()) ? "one(you) won, congratulations!" : "two won, better luck next time!") << std::endl;
+            int flag {game.getWinner()};
+            
+            board = game.getBoard();
+            if (flag == 1)
+            {
+                std::cout << "Player one(you) won, congratulations!";
+                board.insert(board.end(), '3');
+            }
+            else if (flag == 2)
+            {
+                std::cout << "Player two won, better luck next time!";
+                board.insert(board.end(), '4');
+            }
+            else if (flag == 0)
+            {
+                std::cout << "The game is a draw, tough luck!";
+                board.insert(board.end(), '5');
+            }
+            std::cout << std::endl;
             std::cout << "Final board:" << std::endl;
             std::cout << game.getBoard() << std::endl;
-            board = game.getBoard();
-            if (playerOneTurn)
-                board.insert(board.end(), '3');
-            else
-                board.insert(board.end(), '4');
             send(clientFD, board.c_str(), board.size(), 0);
         }
     }
