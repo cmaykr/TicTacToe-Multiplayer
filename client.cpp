@@ -9,12 +9,10 @@
 #include <stdexcept>
 #include <iostream>
 #include <poll.h>
+#include <algorithm>
 
 #include <chrono>
 #include <thread>
-
-
-#include "conn.hpp"
 
 int clientFD;
 
@@ -86,7 +84,7 @@ int main(int argc, char *argv[])
         fds[0].fd = clientFD;
         fds[0].events = POLLIN;
         int N{};
-        if (poll(fds, 1, -1) > 0)
+        if (poll(fds, 1, -1) > 0) // Currently blocks program completely until something happens, can probably stall program.
             N = recv(clientFD, buf, 1024, 0);
         else    
         {
@@ -94,15 +92,60 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        std::string rec {buf, N};
-        if (N == -1)
+        if (N == -1 || N == 0)
         {
             std::cout << "Connection failed" << std::endl;
         }
+        std::string rec {buf, N};
 
         std::cout << "Recieved: " << N << " bytes" << std::endl;
-        std::cout << rec;
+        std::for_each(rec.begin(), rec.end() - 1, [](char c)
+        {
+            std::cout << c;
+        });
         std::cout << std::endl;
+
+        if (rec.at(N - 1) == '2')
+        {
+            std::cout << "Your turn, choose an empty spot to place your o. 1-9" << std::endl;
+            int spot{};
+            std::cin >> spot;
+            std::cout << "Sending message: " << spot << std::endl;
+            char message[1];
+            message[0] = spot;
+            send(clientFD, message, sizeof(message), 0);
+            char buf[1024];
+            int N = recv(clientFD, buf, sizeof(buf), 0);
+
+            std::string ans{buf, N};
+            while (ans == "invalid" && ans != "valid")
+            {
+                std::cin >> spot;
+                send(clientFD, (const void*)spot, 1, 0);
+
+                N = recv(clientFD, buf, sizeof(buf), 0);
+                ans = std::string(buf, N);
+            }
+        }
+        else if (rec.at(N - 1) == '3')
+        {
+            std::cout << "Game is over, player one won the game." << std::endl;
+            gameOver = true;
+        }
+        else if (rec.at(N - 1) == '4')
+        {
+            std::cout << "Game is over, player two (you) won the game." << std::endl;
+            gameOver = true;
+        }
+        else if (rec.at(N - 1) == '1')
+        {
+            std::cout << "Other players turn" << std::endl;
+        }
+        else
+        {
+            std::cout << "Invalid message, ending session." << std::endl;
+            gameOver = true;
+        }
     }
     close(clientFD);
     return 0;

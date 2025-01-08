@@ -8,8 +8,8 @@
 #include <unistd.h>
 #include <stdexcept>
 #include <iostream>
+#include <poll.h>
 
-#include "serverSocket.hpp"
 #include "game.hpp"
 
 int serverFD;
@@ -25,7 +25,9 @@ void createServer(int port)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    int err = getaddrinfo(NULL, "8180", &hints, &result);
+    char buf[4];
+    std::to_chars(buf, buf + sizeof(buf), port);
+    int err = getaddrinfo(NULL, buf, &hints, &result);
     if (err < 0)
     {
         std::cout << "Error getting address" << std::endl;
@@ -58,7 +60,7 @@ int main(int argc, char** argv)
 
     Game game{};
 
-    createServer(8080);
+    createServer(std::stoi(argv[1]));
 
     int clientFD = accept(serverFD, NULL, NULL);
     close(serverFD);
@@ -99,7 +101,14 @@ int main(int argc, char** argv)
         else
         {
             char buf[1];
-            int N = recv(clientFD, buf, sizeof(buf), 0);
+            struct pollfd fds[1];
+            fds[0].fd = clientFD;
+            fds[0].events = POLLIN;
+            int N{};
+            if (poll(fds, 1, -1) > 0)
+                N = recv(clientFD, buf, sizeof(buf), 0);
+
+            std::cout << "Got message: " << buf << std::endl;
             spot = buf[0];
             while (!game.playMove(spot))
             {
@@ -107,14 +116,20 @@ int main(int argc, char** argv)
                 recv(clientFD, buf, sizeof(buf), 0);
                 spot = buf[0];
             }
+            send(clientFD, "valid", 5, 0);
         }
 
         if (game.isOver())
         {
-            std::cout << "Player " << ((game.isPlayerOnesTurn()) ? "one" : "two") << " won." << std::endl;
+            std::cout << "Player " << ((game.isPlayerOnesTurn()) ? "one(you) won, congratulations!" : "two won, better luck next time!") << std::endl;
             std::cout << "Final board:" << std::endl;
             std::cout << game.getBoard() << std::endl;
-            send(clientFD, game.getBoard().c_str(), game.getBoard().size(), 0);
+            board = game.getBoard();
+            if (playerOneTurn)
+                board.insert(board.end(), '3');
+            else
+                board.insert(board.end(), '4');
+            send(clientFD, board.c_str(), board.size(), 0);
         }
     }
 
