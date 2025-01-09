@@ -12,6 +12,11 @@
 int serverFD;
 int clientFD;
 
+void printError()
+{
+    std::cout << "Error code: " << strerror(errno) << std::endl;
+}
+
 void createServer(int port)
 {
     struct addrinfo hints;
@@ -58,15 +63,15 @@ int main(int argc, char** argv)
 
     createServer(std::stoi(argv[1]));
 
-    int clientFD = accept(serverFD, NULL, NULL);
+    int clientFD = accept(0, NULL, NULL);
     close(serverFD);
 
     if (clientFD == -1)
     {
-        std::cout << "Fail" << std::endl;
+        std::cout << "Failed to connect to the client." << std::endl;
+        printError();
     }
 
-    //game.startGame();
     while (game.isOver() == false)
     {
         std::cout << game.getBoard() << std::endl;
@@ -75,13 +80,23 @@ int main(int argc, char** argv)
         if (game.isPlayerOnesTurn())
         {
             board.insert(board.end(), '1');
-            send(clientFD, board.c_str(), board.size(), 0);
+            if (send(clientFD, board.c_str(), board.size(), 0) == -1)
+            {
+                printError();
+                close(clientFD);
+                return -1;
+            }
             std::cout << "Player one's turn, choose an empty spot to place your x. 1-9" << std::endl;
         }
         else
         {
             board.insert(board.end(), '2');
-            send(clientFD, board.c_str(), board.size(), 0);
+            if (send(clientFD, board.c_str(), board.size(), 0) == -1)
+            {
+                printError();
+                close(clientFD);
+                return -1;
+            }
             std::cout << "Player two's turn, wait for them to place their mark. " << std::endl;
         }
 
@@ -101,8 +116,15 @@ int main(int argc, char** argv)
             fds[0].fd = clientFD;
             fds[0].events = POLLIN;
             int N{};
-            if (poll(fds, 1, -1) > 0)
+            int polls = poll(fds, 1, -1);
+            if (polls > 0)
                 N = recv(clientFD, buf, sizeof(buf), 0);
+            else if (polls < 0)
+            {
+                printError();
+                close(clientFD);
+                return -1;
+            }
 
             spot = buf[0];
             while (!game.playMove(spot))
