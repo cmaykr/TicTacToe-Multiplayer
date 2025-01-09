@@ -48,6 +48,7 @@ public:
         if (err < 0)
         {
             std::cerr << "Error getting address" << std::endl;
+            printError();
             exit(2);
         }
 
@@ -63,7 +64,7 @@ public:
                 break;
             }
 
-            close(socketFD);
+            closeSocket();
         }
 
         freeaddrinfo(result);
@@ -94,10 +95,13 @@ public:
         return Socket(debugOutput, fd);
     }
 
-    bool initializeClientAndConnectToServer(std::string const& address, int port)
+    void initializeClientAndConnectToServer(std::string const& address, int port)
     {
         if (isInitialized)
-            return false;
+        {
+            std::cerr << "Socket already initialized" << std::endl;
+            exit(1);
+        }
 
         struct addrinfo hints{};
         struct addrinfo *result, *rp;
@@ -112,8 +116,8 @@ public:
         int err;
         if (err = getaddrinfo(address.c_str(), buf, &hints, &result) < 0)
         {
-            std::cerr << "Error: " << errno << std::endl;
-            return false;
+            printError();
+            exit(1);
         }
 
         for (rp = result; rp; rp = rp->ai_next)
@@ -128,7 +132,7 @@ public:
                 break;
             }
             
-            close(socketFD);
+            closeSocket();
         }
 
         freeaddrinfo(result);
@@ -136,7 +140,6 @@ public:
         if (debugOutput)
             std::cout << "Connection success" << std::endl;
         isInitialized = true;
-        return true;
     }
 
     /// @brief Polls the socket and gets the message if there is one.
@@ -173,7 +176,7 @@ public:
         {
             std::cerr << "Nothing to receive" << std::endl;
             printError();
-            close(socketFD);
+            closeSocket();
             return "";
         }
 
@@ -187,7 +190,7 @@ public:
         if (send(socketFD, message.c_str(), message.size(), 0) == -1)
         {
             printError();
-            close(socketFD);
+            closeSocket();
             exit(1);
         }
     }
