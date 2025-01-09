@@ -12,6 +12,8 @@
 #include <chrono>
 #include <thread>
 
+#include "socket.hpp"
+
 int clientFD;
 
 void connectToServer(std::string const& address, int port)
@@ -72,74 +74,83 @@ int main(int argc, char *argv[])
     address = argv[1]; // TODO: Check for correct format.
     port = std::stoi(argv[2]); // TODO: Check for correct format and port number.
 
-    connectToServer(address, port);
+    //connectToServer(address, port);
+
+    Socket socket{false};
+    socket.initializeClientAndConnectToServer(address, port);
 
     bool gameOver = false;
     while (gameOver == false)
     {
-        char buf[1024];
-        struct pollfd fds[1];
-        fds[0].fd = clientFD;
-        fds[0].events = POLLIN;
-        int N{};
-        if (poll(fds, 1, -1) > 0) // Currently blocks program completely until something happens, can probably stall program.
-            N = recv(clientFD, buf, 1024, 0);
-        else    
-        {
-            std::cout << "Something went wrong" << std::endl;
-            return -1;
-        }
+        // char buf[1024];
+        // struct pollfd fds[1];
+        // fds[0].fd = clientFD;
+        // fds[0].events = POLLIN;
+        // int N{};
+        // if (poll(fds, 1, -1) > 0) // Currently blocks program completely until something happens, can probably stall program.
+        //     N = recv(clientFD, buf, 1024, 0);
+        // else    
+        // {
+        //     std::cout << "Something went wrong" << std::endl;
+        //     return -1;
+        // }
 
-        if (N == -1 || N == 0)
-        {
-            std::cout << "Connection failed" << std::endl;
-        }
-        std::string rec {buf, (long unsigned int)N};
+        // if (N == -1 || N == 0)
+        // {
+        //     std::cout << "Connection failed" << std::endl;
+        // }
+        //std::string rec {buf, (long unsigned int)N};
+        std::string rec = socket.pollAndRecieveMessage();
 
-        std::cout << "Recieved: " << N << " bytes" << std::endl;
         std::for_each(rec.begin(), rec.end() - 1, [](char c)
         {
             std::cout << c;
         });
         std::cout << std::endl;
+        std::cout << *(--rec.end()) << std::endl;
 
-        if (rec.at(N - 1) == '2')
+        if (*(--rec.end()) == '2')
         {
             std::cout << "Your turn, choose an empty spot to place your o. 1-9" << std::endl;
             int spot{};
             std::cin >> spot;
-            std::cout << "Sending message: " << spot << std::endl;
             char message[1];
-            message[0] = spot;
-            send(clientFD, message, sizeof(message), 0);
-            char buf[1024];
-            int N = recv(clientFD, buf, sizeof(buf), 0);
+            message[0] = '0' + spot;
+            std::cout << "Sending message: " << message[0] << " from: " << spot << std::endl;
+            //send(clientFD, message, sizeof(message), 0);
+            // char buf[1024];
+            // int N = recv(clientFD, buf, sizeof(buf), 0);
 
-            std::string ans{buf, (long unsigned int)N};
+            // std::string ans{buf, (long unsigned int)N};
+
+            socket.sendMessage(message);
+            std::string ans {socket.pollAndRecieveMessage()};
             while (ans == "invalid" && ans != "valid")
             {
                 std::cin >> spot;
-                send(clientFD, &spot, 1, 0);
+                //send(clientFD, &spot, 1, 0);
+                socket.sendMessage(std::to_string(spot));
 
-                N = recv(clientFD, buf, sizeof(buf), 0);
-                ans = std::string(buf, N);
+                //N = recv(clientFD, buf, sizeof(buf), 0);
+                //ans = std::string(buf, N);
+                ans = socket.pollAndRecieveMessage();
             }
         }
-        else if (rec.at(N - 1) == '3')
+        else if (*(--rec.end()) == '3')
         {
             std::cout << "Game is over, player one won the game." << std::endl;
             gameOver = true;
         }
-        else if (rec.at(N - 1) == '4')
+        else if (*(--rec.end()) == '4')
         {
             std::cout << "Game is over, player two (you) won the game." << std::endl;
             gameOver = true;
         }
-        else if (rec.at(N - 1) == '1')
+        else if (*(--rec.end()) == '1')
         {
             std::cout << "Other players turn" << std::endl;
         }
-        else if (rec.at(N - 1) == '5')
+        else if (*(--rec.end()) == '5')
         {
             std::cout << "Game is a draw, tough luck!" << std::endl;
             gameOver = true;
@@ -151,6 +162,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    close(clientFD);
+    //close(clientFD);
     return 0;
 }

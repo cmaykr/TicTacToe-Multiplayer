@@ -8,6 +8,7 @@
 #include <poll.h>
 
 #include "game.hpp"
+#include "socket.hpp"
 
 int serverFD;
 int clientFD;
@@ -56,15 +57,18 @@ void createServer(int port)
 
 int main(int argc, char** argv)
 {
-    bool gameOver = true;
+    bool gameOver = false;
     bool playerOneTurn = true;
 
     Game game{};
+    Socket server{false};
+    server.initializeServer(std::stoi(argv[1]));
+    Socket client = server.acceptConnection();
 
-    createServer(std::stoi(argv[1]));
+    //createServer(std::stoi(argv[1]));
 
-    int clientFD = accept(0, NULL, NULL);
-    close(serverFD);
+    //int clientFD = accept(0, NULL, NULL);
+    //close(serverFD);
 
     if (clientFD == -1)
     {
@@ -80,23 +84,25 @@ int main(int argc, char** argv)
         if (game.isPlayerOnesTurn())
         {
             board.insert(board.end(), '1');
-            if (send(clientFD, board.c_str(), board.size(), 0) == -1)
-            {
-                printError();
-                close(clientFD);
-                return -1;
-            }
+            // if (send(clientFD, board.c_str(), board.size(), 0) == -1)
+            // {
+            //     printError();
+            //     close(clientFD);
+            //     return -1;
+            // }
+            client.sendMessage(board);
             std::cout << "Player one's turn, choose an empty spot to place your x. 1-9" << std::endl;
         }
         else
         {
             board.insert(board.end(), '2');
-            if (send(clientFD, board.c_str(), board.size(), 0) == -1)
-            {
-                printError();
-                close(clientFD);
-                return -1;
-            }
+            // if (send(clientFD, board.c_str(), board.size(), 0) == -1)
+            // {
+            //     printError();
+            //     close(clientFD);
+            //     return -1;
+            // }
+            client.sendMessage(board);
             std::cout << "Player two's turn, wait for them to place their mark. " << std::endl;
         }
 
@@ -111,29 +117,37 @@ int main(int argc, char** argv)
         }
         else
         {
-            char buf[1];
-            struct pollfd fds[1];
-            fds[0].fd = clientFD;
-            fds[0].events = POLLIN;
-            int N{};
-            int polls = poll(fds, 1, -1);
-            if (polls > 0)
-                N = recv(clientFD, buf, sizeof(buf), 0);
-            else if (polls < 0)
-            {
-                printError();
-                close(clientFD);
-                return -1;
-            }
+            // char buf[1];
+            // struct pollfd fds[1];
+            // fds[0].fd = clientFD;
+            // fds[0].events = POLLIN;
+            // int N{};
+            // int polls = poll(fds, 1, -1);
+            // if (polls > 0)
+            //     N = recv(clientFD, buf, sizeof(buf), 0);
+            // else if (polls < 0)
+            // {
+            //     printError();
+            //     close(clientFD);
+            //     return -1;
+            // }
 
-            spot = buf[0];
+            //spot = buf[0];
+            spot = std::stoi(client.pollAndRecieveMessage());
+
             while (!game.playMove(spot))
             {
-                send(clientFD, "Invalid", 7, 0);
-                recv(clientFD, buf, sizeof(buf), 0);
-                spot = buf[0];
+                //send(clientFD, "Invalid", 7, 0);
+                // recv(clientFD, buf, sizeof(buf), 0);
+                // spot = buf[0];
+
+                client.sendMessage("Invalid");
+                spot = std::stoi(client.pollAndRecieveMessage());
             }
+            
+
             send(clientFD, "valid", 5, 0);
+            client.sendMessage("valid");
         }
 
         if (game.isOver())
@@ -159,11 +173,12 @@ int main(int argc, char** argv)
             std::cout << std::endl;
             std::cout << "Final board:" << std::endl;
             std::cout << game.getBoard() << std::endl;
-            send(clientFD, board.c_str(), board.size(), 0);
+            //send(clientFD, board.c_str(), board.size(), 0);
+            client.sendMessage(board);
         }
     }
 
-    close(clientFD);
+    //close(clientFD);
     
     return 0;
 }
