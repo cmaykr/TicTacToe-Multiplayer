@@ -26,6 +26,9 @@ public:
 
     ~Socket()
     {
+        if (debugOutput)
+            std::cout << "Closing socket with FD: " << socketFD << std::endl;
+        shutdown(socketFD, SHUT_RDWR);
         close(socketFD);
     }
 
