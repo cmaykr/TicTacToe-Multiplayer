@@ -26,10 +26,7 @@ public:
 
     ~Socket()
     {
-        if (debugOutput)
-            std::cout << "Closing socket with FD: " << socketFD << std::endl;
-        shutdown(socketFD, SHUT_RDWR);
-        close(socketFD);
+        closeSocket();
     }
 
     bool initializeServer(int port)
@@ -158,8 +155,14 @@ public:
             if (N == -1)
             {
                 std::cerr << "Socket failed when receiving message" << std::endl;
-                close(socketFD);
+                closeSocket();
                 exit(1);
+            }
+            if (N == 0)
+            {
+                std::cerr << "Peer socket not available, closing connection" << std::endl;
+                closeSocket();
+                exit(2);
             }
             std::string message {buf, N};
             if (debugOutput)
@@ -198,5 +201,13 @@ private:
     void printError()
     {
         std::cerr << "Error code: " << strerror(errno) << std::endl;
+    }
+
+    void closeSocket()
+    {
+        if (debugOutput)
+            std::cout << "Closing socket with FD: " << socketFD << std::endl;
+        shutdown(socketFD, SHUT_RDWR);
+        close(socketFD);
     }
 };

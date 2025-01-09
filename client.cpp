@@ -8,6 +8,7 @@
 #include <iostream>
 #include <poll.h>
 #include <algorithm>
+#include <limits>
 
 #include <chrono>
 #include <thread>
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
 
     //connectToServer(address, port);
 
-    Socket socket{false};
+    Socket socket{true};
     socket.initializeClientAndConnectToServer(address, port);
 
     bool gameOver = false;
@@ -127,6 +128,9 @@ int main(int argc, char *argv[])
             std::string ans {socket.pollAndRecieveMessage()};
             while (ans == "invalid" && ans != "valid")
             {
+                std::cout << "Mark can't be placed on that spot, choose another empty spot." << std::endl;
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                 std::cin >> spot;
                 //send(clientFD, &spot, 1, 0);
                 socket.sendMessage(std::to_string(spot));

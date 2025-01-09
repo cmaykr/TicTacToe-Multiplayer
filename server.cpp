@@ -9,6 +9,7 @@
 
 #include "game.hpp"
 #include "socket.hpp"
+#include <limits>
 
 int serverFD;
 int clientFD;
@@ -112,6 +113,9 @@ int main(int argc, char** argv)
             std::cin >> spot;
             while (!game.playMove(spot))
             {
+                std::cout << "Mark can't be placed on that spot, choose another empty spot." << std::endl;
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
                 std::cin >> spot;
             }
         }
@@ -141,7 +145,7 @@ int main(int argc, char** argv)
                 // recv(clientFD, buf, sizeof(buf), 0);
                 // spot = buf[0];
 
-                client.sendMessage("Invalid");
+                client.sendMessage("invalid");
                 spot = std::stoi(client.pollAndRecieveMessage());
             }
             
